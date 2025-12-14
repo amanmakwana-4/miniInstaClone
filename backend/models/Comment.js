@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-
 const commentSchema = new mongoose.Schema({
     post: {
         type: mongoose.Schema.Types.ObjectId,
@@ -13,12 +12,11 @@ const commentSchema = new mongoose.Schema({
     },
     text: {
         type: String,
-        required: [true, 'Please provide a comment'],
-        maxlength: [1000, 'Comment cannot exceed 1000 characters']
+        required: [true, 'Write a commment'],
+        maxlength: [1000, 'Comment length is not more than 1000 characters']
     }
 }, {
     timestamps: true
 });
-
 const Comment = mongoose.model('Comment', commentSchema);
 export default Comment;
