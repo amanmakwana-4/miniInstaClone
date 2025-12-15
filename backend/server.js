@@ -17,7 +17,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:3000",
-    "https://YOUR_FRONTEND_NAME.vercel.app"
+    "https://mini-insta-clone.vercel.app/login"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
