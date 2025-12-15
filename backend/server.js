@@ -12,10 +12,7 @@ import notificationRoutes from "./routes/notifications.js";
 import storyRoutes from "./routes/stories.js";
 import messageRoutes from "./routes/messages.js";
 
-/* ===== ENV ===== */
 dotenv.config();
-
-/* ===== APP ===== */
 const app = express();
 
 /* ===== CORS (MUST BE FIRST) ===== */
@@ -48,17 +45,14 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/stories", storyRoutes);
 app.use("/api/messages", messageRoutes);
 
-/* ===== HEALTH ===== */
 app.get("/api/health", (req, res) => {
   res.status(200).json({ success: true, message: "Server is running" });
 });
 
-/* ===== 404 ===== */
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
-/* ===== START ===== */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
