@@ -2,9 +2,99 @@ import express from 'express';
 import User from '../models/User.js';
 import Follow from '../models/Follow.js';
 import Post from '../models/Post.js';
+import Notification from '../models/Notification.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Update profile
+router.put('/profile', protect, async (req, res) => {
+    try {
+        const { username, email, bio, profilePicture } = req.body;
+        
+        // Check if username is taken by another user
+        if (username) {
+            const existingUser = await User.findOne({ 
+                username, 
+                _id: { $ne: req.user.id } 
+            });
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Username is already taken'
+                });
+            }
+        }
+        
+        // Check if email is taken by another user
+        if (email) {
+            const existingEmail = await User.findOne({ 
+                email, 
+                _id: { $ne: req.user.id } 
+            });
+            if (existingEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email is already taken'
+                });
+            }
+        }
+        
+        const updateData = {};
+        if (username) updateData.username = username;
+        if (email) updateData.email = email;
+        if (bio !== undefined) updateData.bio = bio;
+        if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+        
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                bio: user.bio,
+                profilePicture: user.profilePicture
+            }
+        });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        
+        // Handle specific MongoDB errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(e => e.message);
+            return res.status(400).json({
+                success: false,
+                message: messages.join(', ')
+            });
+        }
+        
+        if (error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username or email already exists'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Server error: ' + (error.message || 'Failed to update profile')
+        });
+    }
+});
+
 router.get('/search', protect, async (req, res) => {
     try {
         const { q } = req.query;
@@ -149,6 +239,14 @@ router.post('/:id/follow', protect, async (req, res) => {
             follower: req.user.id,
             following: req.params.id
         });
+
+        // Create follow notification
+        await Notification.create({
+            recipient: req.params.id,
+            sender: req.user.id,
+            type: 'follow'
+        });
+
         res.status(200).json({
             success: true,
             message: 'Successfully followed user'

@@ -15,6 +15,9 @@ const PostDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [commentLoading, setCommentLoading] = useState(false);
+    const [showLikesModal, setShowLikesModal] = useState(false);
+    const [likedUsers, setLikedUsers] = useState([]);
+    const [likesLoading, setLikesLoading] = useState(false);
 
     useEffect(() => {
         fetchPostData();
@@ -93,6 +96,19 @@ const PostDetail = () => {
         }
     };
 
+    const fetchLikes = async () => {
+        setLikesLoading(true);
+        try {
+            const res = await api.get(`/posts/${postId}/likes`);
+            setLikedUsers(res.data.users || []);
+            setShowLikesModal(true);
+        } catch (err) {
+            console.error('Error fetching likes:', err);
+        } finally {
+            setLikesLoading(false);
+        }
+    };
+
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
@@ -105,7 +121,7 @@ const PostDetail = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
-                <div className="text-gray-500">Loading post...</div>
+                <div className="text-zinc-500">Loading post...</div>
             </div>
         );
     }
@@ -113,8 +129,8 @@ const PostDetail = () => {
     if (error || !post) {
         return (
             <div className="flex flex-col justify-center items-center min-h-screen">
-                <p className="text-red-500 mb-4">{error || 'Post not found'}</p>
-                <button onClick={() => navigate('/')} className="btn-primary">
+                <p className="text-red-400 mb-4">{error || 'Post not found'}</p>
+                <button onClick={() => navigate('/')} className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold">
                     Go Home
                 </button>
             </div>
@@ -124,167 +140,190 @@ const PostDetail = () => {
     const isOwner = user?.id === post.user?._id;
 
     return (
-        <div className="max-w-5xl mx-auto">
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="flex flex-col lg:flex-row">
-                    {/* Image Section */}
-                    <div className="lg:w-3/5 bg-black flex items-center justify-center">
+        <div className="max-w-lg mx-auto">
+            <div className="bg-black">
+                {/* Header */}
+                <div className="flex items-center justify-between p-3 border-b border-zinc-800">
+                    <button onClick={() => navigate(-1)} className="text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h1 className="text-base font-semibold text-white">Post</h1>
+                    {isOwner ? (
+                        <button
+                            onClick={handleDeletePost}
+                            className="text-red-500 text-sm font-semibold"
+                        >
+                            Delete
+                        </button>
+                    ) : (
+                        <div className="w-6"></div>
+                    )}
+                </div>
+
+                {/* Post User Header */}
+                <div className="flex items-center p-3">
+                    <Link to={`/profile/${post.user?._id}`}>
                         <img
-                            src={post.imageUrl}
-                            alt="Post"
-                            className="w-full max-h-[600px] object-contain"
+                            src={post.user?.profilePicture || 'https://via.placeholder.com/40'}
+                            alt={post.user?.username}
+                            className="w-8 h-8 rounded-full object-cover"
                         />
+                    </Link>
+                    <Link to={`/profile/${post.user?._id}`} className="ml-3 font-semibold text-sm text-white">
+                        {post.user?.username}
+                    </Link>
+                </div>
+
+                {/* Media (image or video) */}
+                {typeof post.imageUrl === 'string' && (post.imageUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i) || post.imageUrl.startsWith('data:video')) ? (
+                    <video src={post.imageUrl} className="w-full" controls preload="metadata" />
+                ) : (
+                    <img src={post.imageUrl} alt="Post" className="w-full" />
+                )}
+
+                {/* Actions */}
+                <div className="p-3">
+                    <div className="flex items-center space-x-4 mb-2">
+                        <button onClick={handleLike} className="focus:outline-none">
+                            {liked ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white hover:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            )}
+                        </button>
                     </div>
 
-                    {/* Details Section */}
-                    <div className="lg:w-2/5 flex flex-col">
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                            <Link to={`/profile/${post.user?._id}`} className="flex items-center">
-                                <img
-                                    src={post.user?.profilePicture || 'https://via.placeholder.com/40'}
-                                    alt={post.user?.username}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                />
-                                <span className="ml-3 font-semibold text-sm hover:underline">
-                                    {post.user?.username}
-                                </span>
-                            </Link>
-                            {isOwner && (
-                                <button
-                                    onClick={handleDeletePost}
-                                    className="text-red-500 text-sm font-semibold hover:text-red-600"
-                                >
-                                    Delete
-                                </button>
-                            )}
-                        </div>
+                    <button 
+                        onClick={fetchLikes}
+                        className="font-semibold text-sm mb-2 text-white hover:text-zinc-400 cursor-pointer text-left"
+                        disabled={likesLoading}
+                    >
+                        {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+                    </button>
 
-                        {/* Comments Section */}
-                        <div className="flex-1 overflow-y-auto p-4 max-h-80 lg:max-h-96">
-                            {/* Caption */}
-                            {post.caption && (
-                                <div className="flex mb-4">
-                                    <Link to={`/profile/${post.user?._id}`}>
+                    {/* Caption */}
+                    {post.caption && (
+                        <p className="text-sm mb-2 text-white">
+                            <Link to={`/profile/${post.user?._id}`} className="font-semibold mr-2">
+                                {post.user?.username}
+                            </Link>
+                            <span className="text-zinc-300">{post.caption}</span>
+                        </p>
+                    )}
+
+                    <p className="text-xs text-zinc-500 uppercase mt-2">
+                        {formatDate(post.createdAt)}
+                    </p>
+                </div>
+
+                {/* Comments Section */}
+                <div className="border-t border-zinc-800 p-3">
+                    <h3 className="text-sm font-semibold text-white mb-3">Comments</h3>
+                    <div className="max-h-60 overflow-y-auto space-y-3">
+                        {comments.length === 0 ? (
+                            <p className="text-zinc-500 text-sm text-center py-4">
+                                No comments yet. Be the first!
+                            </p>
+                        ) : (
+                            comments.map(comment => (
+                                <div key={comment._id} className="flex group">
+                                    <Link to={`/profile/${comment.user?._id}`}>
                                         <img
-                                            src={post.user?.profilePicture || 'https://via.placeholder.com/32'}
-                                            alt={post.user?.username}
+                                            src={comment.user?.profilePicture || 'https://via.placeholder.com/32'}
+                                            alt={comment.user?.username}
                                             className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                         />
                                     </Link>
-                                    <div className="ml-3">
-                                        <p className="text-sm">
-                                            <Link to={`/profile/${post.user?._id}`} className="font-semibold mr-2 hover:underline">
-                                                {post.user?.username}
+                                    <div className="ml-3 flex-1">
+                                        <p className="text-sm text-white">
+                                            <Link to={`/profile/${comment.user?._id}`} className="font-semibold mr-2">
+                                                {comment.user?.username}
                                             </Link>
-                                            {post.caption}
+                                            <span className="text-zinc-300">{comment.text}</span>
                                         </p>
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            {formatDate(post.createdAt)}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Comments */}
-                            {comments.length === 0 ? (
-                                <p className="text-gray-400 text-sm text-center py-8">
-                                    No comments yet. Be the first to comment!
-                                </p>
-                            ) : (
-                                comments.map(comment => (
-                                    <div key={comment._id} className="flex mb-4 group">
-                                        <Link to={`/profile/${comment.user?._id}`}>
-                                            <img
-                                                src={comment.user?.profilePicture || 'https://via.placeholder.com/32'}
-                                                alt={comment.user?.username}
-                                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                                            />
-                                        </Link>
-                                        <div className="ml-3 flex-1">
-                                            <p className="text-sm">
-                                                <Link to={`/profile/${comment.user?._id}`} className="font-semibold mr-2 hover:underline">
-                                                    {comment.user?.username}
-                                                </Link>
-                                                {comment.text}
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <p className="text-xs text-zinc-600">
+                                                {formatDate(comment.createdAt)}
                                             </p>
-                                            <div className="flex items-center gap-3 mt-1">
-                                                <p className="text-xs text-gray-400">
-                                                    {formatDate(comment.createdAt)}
-                                                </p>
-                                                {(user?.id === comment.user?._id || isOwner) && (
-                                                    <button
-                                                        onClick={() => handleDeleteComment(comment._id)}
-                                                        className="text-xs text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </div>
+                                            {(user?.id === comment.user?._id || isOwner) && (
+                                                <button
+                                                    onClick={() => handleDeleteComment(comment._id)}
+                                                    className="text-xs text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                ))
-                            )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="border-t border-gray-200 p-4">
-                            <div className="flex items-center space-x-4 mb-3">
-                                {/* Like Button */}
-                                <button onClick={handleLike} className="focus:outline-none">
-                                    {liked ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                                        </svg>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-700 hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Like Count */}
-                            <p className="font-semibold text-sm mb-2">{likeCount} likes</p>
-
-                            {/* Timestamp */}
-                            <p className="text-xs text-gray-400 uppercase">
-                                {formatDate(post.createdAt)}
-                            </p>
-                        </div>
-
-                        {/* Add Comment */}
-                        <div className="border-t border-gray-200 p-4">
-                            <form onSubmit={handleComment} className="flex items-center">
-                                <input
-                                    type="text"
-                                    placeholder="Add a comment..."
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                    className="flex-1 text-sm focus:outline-none bg-transparent"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!newComment.trim() || commentLoading}
-                                    className="text-blue-500 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {commentLoading ? 'Posting...' : 'Post'}
-                                </button>
-                            </form>
-                        </div>
+                                </div>
+                            ))
+                        )}
                     </div>
+                </div>
+
+                {/* Add Comment */}
+                <div className="border-t border-zinc-800 p-3">
+                    <form onSubmit={handleComment} className="flex items-center">
+                        <input
+                            type="text"
+                            placeholder="Add a comment..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            className="flex-1 text-sm focus:outline-none bg-transparent text-white placeholder-zinc-500"
+                        />
+                        <button
+                            type="submit"
+                            disabled={!newComment.trim() || commentLoading}
+                            className="text-blue-500 font-semibold text-sm disabled:opacity-50"
+                        >
+                            {commentLoading ? 'Posting...' : 'Post'}
+                        </button>
+                    </form>
                 </div>
             </div>
 
-            {/* Back Button */}
-            <div className="mt-6 text-center">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="text-gray-500 hover:text-gray-700 text-sm"
-                >
-                    ← Go Back
-                </button>
-            </div>
+            {/* Likes Modal */}
+            {showLikesModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50" onClick={() => setShowLikesModal(false)}>
+                    <div className="bg-zinc-900 rounded-xl w-full max-w-sm mx-4 border border-zinc-800" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+                            <h3 className="font-semibold text-white">Likes</h3>
+                            <button onClick={() => setShowLikesModal(false)} className="text-zinc-400 hover:text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto">
+                            {likedUsers.length === 0 ? (
+                                <p className="text-zinc-500 text-center py-8">No likes yet</p>
+                            ) : (
+                                likedUsers.map((likedUser) => (
+                                    <Link
+                                        key={likedUser._id}
+                                        to={`/profile/${likedUser._id}`}
+                                        onClick={() => setShowLikesModal(false)}
+                                        className="flex items-center gap-3 p-3 hover:bg-zinc-800 transition-colors"
+                                    >
+                                        <img
+                                            src={likedUser.profilePicture || 'https://via.placeholder.com/40'}
+                                            alt={likedUser.username}
+                                            className="w-10 h-10 rounded-full object-cover"
+                                        />
+                                        <span className="font-semibold text-sm text-white">{likedUser.username}</span>
+                                    </Link>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

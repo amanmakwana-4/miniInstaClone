@@ -32,23 +32,23 @@ const Comment = ({ comment, onDelete, canDelete }) => {
                 />
             </Link>
             <div className="ml-3 flex-1">
-                <p className="text-sm">
+                <p className="text-sm text-white">
                     <Link
                         to={`/profile/${comment.user?._id}`}
-                        className="font-semibold mr-2 hover:underline"
+                        className="font-semibold mr-2"
                     >
                         {comment.user?.username}
                     </Link>
-                    <span className="text-gray-800">{comment.text}</span>
+                    <span className="text-zinc-300">{comment.text}</span>
                 </p>
                 <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-zinc-600">
                         {formatDate(comment.createdAt)}
                     </span>
                     {canDelete && (
                         <button
                             onClick={() => onDelete(comment._id)}
-                            className="text-xs text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-xs text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             Delete
                         </button>

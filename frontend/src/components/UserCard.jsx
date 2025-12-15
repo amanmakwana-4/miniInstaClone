@@ -32,16 +32,16 @@ const UserCard = ({ user, showFollowButton = true, initialFollowing = false }) =
     };
 
     return (
-        <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+        <div className="flex items-center justify-between p-3 hover:bg-zinc-900 rounded-lg transition-colors">
             <Link to={`/profile/${user._id}`} className="flex items-center flex-1">
                 <img
                     src={user.profilePicture || 'https://via.placeholder.com/44'}
                     alt={user.username}
-                    className="w-11 h-11 rounded-full object-cover border border-gray-200"
+                    className="w-11 h-11 rounded-full object-cover border border-zinc-700"
                 />
                 <div className="ml-3">
-                    <p className="font-semibold text-sm hover:underline">{user.username}</p>
-                    <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                    <p className="font-semibold text-sm text-white hover:underline">{user.username}</p>
+                    <p className="text-xs text-zinc-500 truncate max-w-[150px]">
                         {user.bio || 'Instagram user'}
                     </p>
                 </div>
@@ -53,8 +53,8 @@ const UserCard = ({ user, showFollowButton = true, initialFollowing = false }) =
                     disabled={loading}
                     className={`text-xs font-semibold px-4 py-1.5 rounded transition-colors ${
                         isFollowing
-                            ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                            : 'text-blue-500 hover:text-blue-600'
+                            ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+                            : 'text-blue-500 hover:text-blue-400'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     {loading ? '...' : isFollowing ? 'Following' : 'Follow'}

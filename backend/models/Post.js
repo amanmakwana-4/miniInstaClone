@@ -22,7 +22,7 @@ const postSchema = new mongoose.Schema({
     timestamps: true
 });
 postSchema.virtual('likeCount').get(function() {
-    return this.likes.length;
+    return this.likes ? this.likes.length : 0;
 });
 postSchema.set('toJSON', { virtuals: true });
 postSchema.set('toObject', { virtuals: true });

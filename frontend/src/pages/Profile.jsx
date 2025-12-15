@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
     const { userId } = useParams();
     const { user: currentUser } = useAuth();
+    const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [posts, setPosts] = useState([]);
     const [followers, setFollowers] = useState([]);
@@ -68,7 +69,7 @@ const Profile = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
-                <div className="text-gray-500">Loading profile...</div>
+                <div className="text-zinc-500">Loading profile...</div>
             </div>
         );
     }
@@ -77,7 +78,7 @@ const Profile = () => {
         return (
             <div className="flex flex-col justify-center items-center min-h-screen">
                 <p className="text-red-500 mb-4">{error}</p>
-                <button onClick={fetchProfileData} className="btn-primary">
+                <button onClick={fetchProfileData} className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold">
                     Try Again
                 </button>
             </div>
@@ -85,70 +86,88 @@ const Profile = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-lg mx-auto">
             {/* Profile Header */}
-            <div className="bg-white border border-gray-200 rounded-lg p-8 mb-8">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+            <div className="p-4 mb-4">
+                <div className="flex items-center gap-6 mb-4">
                     {/* Profile Picture */}
                     <div className="flex-shrink-0">
                         <img
                             src={profile?.profilePicture || 'https://via.placeholder.com/150'}
                             alt={profile?.username}
-                            className="w-36 h-36 rounded-full object-cover border-2 border-gray-200"
+                            className="w-20 h-20 rounded-full object-cover border-2 border-zinc-700"
                         />
                     </div>
 
-                    {/* Profile Info */}
-                    <div className="flex-1 text-center md:text-left">
-                        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
-                            <h1 className="text-2xl font-light">{profile?.username}</h1>
-                            {!isOwnProfile && (
-                                <button
-                                    onClick={handleFollow}
-                                    className={isFollowing ? 'btn-secondary' : 'btn-primary'}
-                                >
-                                    {isFollowing ? 'Following' : 'Follow'}
-                                </button>
-                            )}
-                            {isOwnProfile && (
-                                <button className="btn-secondary">
-                                    Edit Profile
-                                </button>
-                            )}
+                    {/* Stats */}
+                    <div className="flex gap-6 text-center">
+                        <div>
+                            <div className="font-semibold text-white">{posts.length}</div>
+                            <div className="text-zinc-500 text-xs">posts</div>
                         </div>
-
-                        {/* Stats */}
-                        <div className="flex justify-center md:justify-start gap-8 mb-4">
-                            <div className="text-center">
-                                <span className="font-semibold">{posts.length}</span>
-                                <span className="text-gray-500 ml-1">posts</span>
-                            </div>
-                            <div className="text-center">
-                                <span className="font-semibold">{followers.length}</span>
-                                <span className="text-gray-500 ml-1">followers</span>
-                            </div>
-                            <div className="text-center">
-                                <span className="font-semibold">{following.length}</span>
-                                <span className="text-gray-500 ml-1">following</span>
-                            </div>
+                        <div>
+                            <div className="font-semibold text-white">{followers.length}</div>
+                            <div className="text-zinc-500 text-xs">followers</div>
                         </div>
-
-                        {/* Bio */}
-                        {profile?.bio && (
-                            <p className="text-sm">{profile.bio}</p>
-                        )}
+                        <div>
+                            <div className="font-semibold text-white">{following.length}</div>
+                            <div className="text-zinc-500 text-xs">following</div>
+                        </div>
                     </div>
+                </div>
+
+                {/* Username and Bio */}
+                <div className="mb-4">
+                    <h1 className="font-semibold text-white">{profile?.username}</h1>
+                    {profile?.bio && (
+                        <p className="text-sm text-zinc-400 mt-1">{profile.bio}</p>
+                    )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                    {!isOwnProfile ? (
+                        <>
+                            <button
+                                onClick={handleFollow}
+                                className={`flex-1 py-1.5 rounded-lg font-semibold text-sm ${
+                                    isFollowing
+                                        ? 'bg-zinc-800 text-white'
+                                        : 'bg-blue-500 text-white'
+                                }`}
+                            >
+                                {isFollowing ? 'Following' : 'Follow'}
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const res = await api.post(`/messages/conversations/${userId}`);
+                                        navigate(`/messages/${res.data.conversation._id}`);
+                                    } catch (err) {
+                                        console.error('Failed to start conversation:', err);
+                                    }
+                                }}
+                                className="flex-1 py-1.5 bg-zinc-800 text-white rounded-lg font-semibold text-sm"
+                            >
+                                Message
+                            </button>
+                        </>
+                    ) : (
+                        <Link to="/edit-profile" className="flex-1 py-1.5 bg-zinc-800 text-white rounded-lg font-semibold text-sm text-center">
+                            Edit Profile
+                        </Link>
+                    )}
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-t border-gray-200 bg-white rounded-t-lg">
+            <div className="flex border-t border-zinc-800">
                 <button
                     onClick={() => setActiveTab('posts')}
-                    className={`flex-1 py-4 text-sm font-semibold uppercase tracking-wide ${
+                    className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wide ${
                         activeTab === 'posts'
-                            ? 'text-gray-900 border-t-2 border-gray-900 -mt-px'
-                            : 'text-gray-400'
+                            ? 'text-white border-t border-white -mt-px'
+                            : 'text-zinc-500'
                     }`}
                 >
                     <span className="flex items-center justify-center gap-2">
@@ -161,14 +180,14 @@ const Profile = () => {
             </div>
 
             {/* Posts Grid */}
-            <div className="bg-white border border-gray-200 rounded-b-lg p-4">
+            <div className="">
                 {posts.length === 0 ? (
                     <div className="text-center py-16">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-zinc-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <h2 className="text-2xl font-light mb-2">No Posts Yet</h2>
+                        <h2 className="text-xl font-light mb-2 text-white">No Posts Yet</h2>
                         {isOwnProfile && (
                             <Link to="/create" className="text-blue-500 font-semibold">
                                 Share your first photo
@@ -176,7 +195,7 @@ const Profile = () => {
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-3 gap-1 md:gap-4">
+                    <div className="grid grid-cols-3 gap-0.5">
                         {posts.map(post => (
                             <Link
                                 key={post._id}
@@ -186,10 +205,10 @@ const Profile = () => {
                                 <img
                                     src={post.imageUrl}
                                     alt="Post"
-                                    className="w-full h-full object-cover rounded"
+                                    className="w-full h-full object-cover"
                                 />
                                 {/* Hover Overlay */}
-                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded">
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                                     <div className="flex items-center gap-6 text-white font-semibold">
                                         <span className="flex items-center gap-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">

@@ -2,14 +2,30 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Post from '../models/Post.js';
 import Comment from '../models/Comment.js';
+import Notification from '../models/Notification.js';
 import { protect } from '../middleware/auth.js';
 const router = express.Router();
+
+// Custom validator for media URL (accepts image/video URLs and base64 data URLs)
+const isValidMediaUrl = (value) => {
+    if (!value) return false;
+    // Check if it's a base64 data URL for image or video
+    if (value.startsWith('data:image/') || value.startsWith('data:video/')) return true;
+    // Check if it's a valid URL
+    try {
+        new URL(value);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 router.post('/', protect, [
     body('imageUrl')
         .notEmpty()
-        .withMessage('Image URL is require')
-        .isURL()
-        .withMessage('provide a valid URL'),
+        .withMessage('Media is required')
+        .custom(isValidMediaUrl)
+        .withMessage('Please provide a valid image or video URL or upload media'),
     body('caption')
         .optional()
         .isLength({ max: 2200 })
@@ -43,6 +59,29 @@ router.post('/', protect, [
         });
     }
 });
+
+// Get explore posts (must be before /:id route)
+router.get('/explore', protect, async (req, res) => {
+    try {
+        // Get random/recent posts from all users
+        const posts = await Post.find()
+            .populate('user', 'username profilePicture')
+            .sort({ createdAt: -1 })
+            .limit(50);
+
+        res.status(200).json({
+            success: true,
+            posts
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
 router.get('/:id', protect, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
@@ -121,6 +160,17 @@ router.post('/:id/like', protect, async (req, res) => {
         }
         post.likes.push(req.user.id);
         await post.save();
+
+        // Create notification (don't notify yourself)
+        if (post.user.toString() !== req.user.id) {
+            await Notification.create({
+                recipient: post.user,
+                sender: req.user.id,
+                type: 'like',
+                post: post._id
+            });
+        }
+
         res.status(200).json({
             success: true,
             message: 'Post liked successfully',
@@ -165,6 +215,34 @@ router.delete('/:id/like', protect, async (req, res) => {
         });
     }
 });
+
+// Get users who liked a post
+router.get('/:id/likes', protect, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id)
+            .populate('likes', 'username profilePicture');
+
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            users: post.likes || [],
+            count: post.likes?.length || 0
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+});
+
 router.post('/:id/comments', protect, [
     body('text')
         .trim()
@@ -194,6 +272,18 @@ router.post('/:id/comments', protect, [
             text: req.body.text
         });
         await comment.populate('user', 'username profilePicture');
+
+        // Create notification (don't notify yourself)
+        if (post.user.toString() !== req.user.id) {
+            await Notification.create({
+                recipient: post.user,
+                sender: req.user.id,
+                type: 'comment',
+                post: post._id,
+                comment: comment._id
+            });
+        }
+
         res.status(201).json({
             success: true,
             comment
