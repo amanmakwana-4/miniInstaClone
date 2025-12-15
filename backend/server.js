@@ -1,4 +1,21 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+
+import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js";
+import postRoutes from "./routes/posts.js";
+import commentRoutes from "./routes/comments.js";
+import feedRoutes from "./routes/feed.js";
+import notificationRoutes from "./routes/notifications.js";
+import storyRoutes from "./routes/stories.js";
+import messageRoutes from "./routes/messages.js";
+
+/* ===== ENV ===== */
 dotenv.config();
+
+/* ===== APP ===== */
 const app = express();
 
 /* ===== CORS (MUST BE FIRST) ===== */
@@ -11,6 +28,7 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
 app.options("*", cors());
 
 /* ===== BODY PARSER ===== */
@@ -30,14 +48,17 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/stories", storyRoutes);
 app.use("/api/messages", messageRoutes);
 
+/* ===== HEALTH ===== */
 app.get("/api/health", (req, res) => {
   res.status(200).json({ success: true, message: "Server is running" });
 });
 
+/* ===== 404 ===== */
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
+/* ===== START ===== */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
