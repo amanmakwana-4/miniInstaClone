@@ -4,7 +4,7 @@ import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 const EditProfile = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: '',
