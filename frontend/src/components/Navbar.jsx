@@ -65,7 +65,7 @@ const Navbar = () => {
                 <div className="container mx-auto px-4 max-w-lg">
                     <div className="flex justify-between items-center h-14">
                         <Link to="/" className="text-2xl font-semibold italic text-white">
-                            Instagram
+                            amangram
                         </Link>
                         <div className="flex items-center gap-4">
                             <Link to="/messages" className="text-white relative" title="Messages">
@@ -88,7 +88,7 @@ const Navbar = () => {
                 </div>
             </header>
 
-            {/* Bottom Navigation - Like Instagram */}
+            {/* Bottom Navigation - Like amangram */}
             <nav className="bg-black border-t border-zinc-800 fixed bottom-0 left-0 right-0 z-50 safe-area-pb">
                 <div className="container mx-auto px-4 max-w-lg">
                     <div className="flex justify-around items-center h-14">

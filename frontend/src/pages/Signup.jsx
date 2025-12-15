@@ -68,7 +68,7 @@ const Signup = () => {
                 <div className="bg-black border border-zinc-800 rounded-lg p-8 mb-4">
                     {/* Logo */}
                     <h1 className="text-4xl font-semibold italic text-center mb-4 text-white">
-                        Instagram
+                        amangram
                     </h1>
                     
                     <p className="text-zinc-500 text-center mb-6 text-sm">

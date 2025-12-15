@@ -42,7 +42,7 @@ const UserCard = ({ user, showFollowButton = true, initialFollowing = false }) =
                 <div className="ml-3">
                     <p className="font-semibold text-sm text-white hover:underline">{user.username}</p>
                     <p className="text-xs text-zinc-500 truncate max-w-[150px]">
-                        {user.bio || 'Instagram user'}
+                        {user.bio || 'amangram user'}
                     </p>
                 </div>
             </Link>
