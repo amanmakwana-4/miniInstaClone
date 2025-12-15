@@ -55,7 +55,7 @@ const Signup = () => {
             await signup(formData.username, formData.email, formData.password);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || 'Signup failed. Please try again.');
+            setError(err.response?.data?.message || 'Signup failed. Please try again later.');
         } finally {
             setLoading(false);
         }
