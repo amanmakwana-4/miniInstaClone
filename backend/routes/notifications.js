@@ -3,8 +3,6 @@ import Notification from '../models/Notification.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
-
-// Get all notifications for current user
 router.get('/', protect, async (req, res) => {
     try {
         const notifications = await Notification.find({ recipient: req.user.id })
@@ -12,12 +10,10 @@ router.get('/', protect, async (req, res) => {
             .populate('post', 'imageUrl')
             .sort({ createdAt: -1 })
             .limit(50);
-
         const unreadCount = await Notification.countDocuments({ 
             recipient: req.user.id, 
             read: false 
         });
-
         res.status(200).json({
             success: true,
             notifications,
@@ -31,8 +27,6 @@ router.get('/', protect, async (req, res) => {
         });
     }
 });
-
-// Get unread count - MUST be before /:id routes
 router.get('/unread-count', protect, async (req, res) => {
     try {
         const count = await Notification.countDocuments({ 
@@ -52,8 +46,6 @@ router.get('/unread-count', protect, async (req, res) => {
         });
     }
 });
-
-// Mark all notifications as read
 router.put('/read-all', protect, async (req, res) => {
     try {
         await Notification.updateMany(
@@ -73,8 +65,6 @@ router.put('/read-all', protect, async (req, res) => {
         });
     }
 });
-
-// Mark single notification as read
 router.put('/:id/read', protect, async (req, res) => {
     try {
         const notification = await Notification.findOneAndUpdate(

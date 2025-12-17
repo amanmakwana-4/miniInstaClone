@@ -3,10 +3,7 @@ import Message from '../models/Message.js';
 import Conversation from '../models/Conversation.js';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
-
 const router = express.Router();
-
-// Get all conversations for current user
 router.get('/conversations', protect, async (req, res) => {
     try {
         const conversations = await Conversation.find({
@@ -15,8 +12,6 @@ router.get('/conversations', protect, async (req, res) => {
         .populate('participants', 'username profilePicture')
         .populate('lastMessage')
         .sort({ updatedAt: -1 });
-
-        // Get unread counts for each conversation
         const conversationsWithUnread = await Promise.all(
             conversations.map(async (conv) => {
                 const unreadCount = await Message.countDocuments({
@@ -43,8 +38,6 @@ router.get('/conversations', protect, async (req, res) => {
         });
     }
 });
-
-// Get or create conversation with a user
 router.post('/conversations/:userId', protect, async (req, res) => {
     try {
         const otherUserId = req.params.userId;
@@ -55,8 +48,6 @@ router.post('/conversations/:userId', protect, async (req, res) => {
                 message: 'Cannot create conversation with yourself'
             });
         }
-
-        // Check if user exists
         const otherUser = await User.findById(otherUserId);
         if (!otherUser) {
             return res.status(404).json({
@@ -64,13 +55,9 @@ router.post('/conversations/:userId', protect, async (req, res) => {
                 message: 'User not found'
             });
         }
-
-        // Find existing conversation
         let conversation = await Conversation.findOne({
             participants: { $all: [req.user.id, otherUserId] }
         }).populate('participants', 'username profilePicture');
-
-        // Create new conversation if doesn't exist
         if (!conversation) {
             conversation = await Conversation.create({
                 participants: [req.user.id, otherUserId]
@@ -90,8 +77,6 @@ router.post('/conversations/:userId', protect, async (req, res) => {
         });
     }
 });
-
-// Get messages in a conversation
 router.get('/conversations/:conversationId/messages', protect, async (req, res) => {
     try {
         const conversation = await Conversation.findById(req.params.conversationId);
@@ -102,8 +87,6 @@ router.get('/conversations/:conversationId/messages', protect, async (req, res) 
                 message: 'Conversation not found'
             });
         }
-
-        // Check if user is part of conversation
         if (!conversation.participants.includes(req.user.id)) {
             return res.status(403).json({
                 success: false,
@@ -121,7 +104,6 @@ router.get('/conversations/:conversationId/messages', protect, async (req, res) 
         .sort({ createdAt: 1 })
         .limit(100);
 
-        // Mark messages as read
         await Message.updateMany(
             { receiver: req.user.id, read: false },
             { read: true }
@@ -139,46 +121,34 @@ router.get('/conversations/:conversationId/messages', protect, async (req, res) 
         });
     }
 });
-
-// Send a message
 router.post('/conversations/:conversationId/messages', protect, async (req, res) => {
     try {
         const { content, mediaUrl, mediaType } = req.body;
-
-        // Validate: must have content or media
         if ((!content || !content.trim()) && !mediaUrl) {
             return res.status(400).json({
                 success: false,
                 message: 'Message must have content or media'
             });
         }
-
-        // Validate media type if provided
         if (mediaUrl && !['image', 'video', 'gif'].includes(mediaType)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid media type'
             });
         }
-
         const conversation = await Conversation.findById(req.params.conversationId);
-
         if (!conversation) {
             return res.status(404).json({
                 success: false,
                 message: 'Conversation not found'
             });
         }
-
-        // Check if user is part of conversation (PROTECTION)
         if (!conversation.participants.includes(req.user.id)) {
             return res.status(403).json({
                 success: false,
                 message: 'Not authorized'
             });
         }
-
-        // Find the other participant
         const receiverId = conversation.participants.find(
             p => p.toString() !== req.user.id
         );
@@ -190,8 +160,6 @@ router.post('/conversations/:conversationId/messages', protect, async (req, res)
             mediaUrl: mediaUrl || null,
             mediaType: mediaUrl ? mediaType : null
         });
-
-        // Update conversation's last message
         conversation.lastMessage = message._id;
         conversation.updatedAt = new Date();
         await conversation.save();
@@ -210,8 +178,6 @@ router.post('/conversations/:conversationId/messages', protect, async (req, res)
         });
     }
 });
-
-// Get total unread message count
 router.get('/unread-count', protect, async (req, res) => {
     try {
         const count = await Message.countDocuments({
